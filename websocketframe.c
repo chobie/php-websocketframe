@@ -112,7 +112,7 @@ zend_object_value php_websocketframe_new(zend_class_entry *ce TSRMLS_DC)
 	object->rsv2 = 0;
 	object->rsv3 = 0;
 	object->mask = 0;
-	object->opcode = 0;
+	object->opcode = 1;
 	//object->mask_key = NULL;
 	object->payload_length = 0;
 	object->payload = NULL;
@@ -136,12 +136,44 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_websocketframe_set_payload, 0, 0, 1)
 	ZEND_ARG_INFO(0, bytes)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_websocketframe_set_opcode, 0, 0, 1)
+	ZEND_ARG_INFO(0, opcode)
+ZEND_END_ARG_INFO()
+
 /* {{{ proto WebSocketFrame WebSocketFrame::__construct()
 */
 PHP_METHOD(websocketframe, __construct)
 {
 }
 /* }}} */
+
+/* {{{ proto void WebSocketFrame::setOpcode($opcode)
+*/
+PHP_METHOD(websocketframe, setOpcode)
+{
+	long opcode;
+	php_websocketframe *frame = NULL;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+		"l", &opcode) == FAILURE) {
+		return;
+	}
+
+	if (opcode < 0 || opcode > 0xF) {
+		zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0 TSRMLS_CC, "opcode have to be 0x0 - 0x0f");
+		return;
+	}
+
+	frame = (php_websocketframe*)zend_object_store_get_object(getThis() TSRMLS_CC);
+	if (frame->mutable == 0) {
+		zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, "this object is not mutable. please use new one.");
+		return;
+	}
+
+	frame->opcode = opcode;
+}
+/* }}} */
+
 
 /* {{{ proto void WebSocketFrame::setPayload($payload)
 */
@@ -226,8 +258,7 @@ PHP_METHOD(websocketframe, serializeToString)
 		buffer[0] |= 0x40;
 	}
 	// type
-	buffer[0] |= 0x01;
-
+	buffer[0] |= frame->opcode;
 	buffer[1] = 0;
 
 	if (frame->payload_length < 0x7e) {
@@ -369,6 +400,7 @@ PHP_METHOD(websocketframe, parseFromString)
 
 static zend_function_entry php_websocketframe_methods[] = {
 	PHP_ME(websocketframe, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
+	PHP_ME(websocketframe, setOpcode, arginfo_websocketframe_set_opcode, ZEND_ACC_PUBLIC)
 	PHP_ME(websocketframe, getPayload, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(websocketframe, setPayload, arginfo_websocketframe_set_payload, ZEND_ACC_PUBLIC)
 	PHP_ME(websocketframe, serializeToString, NULL, ZEND_ACC_PUBLIC)
@@ -382,8 +414,13 @@ static void php_websocketframe_init(TSRMLS_D)
 
 	INIT_CLASS_ENTRY(ce, "WebsocketFrame", php_websocketframe_methods);
 	php_websocketframe_class_entry = zend_register_internal_class(&ce TSRMLS_CC);
-
 	php_websocketframe_class_entry->create_object = php_websocketframe_new;
+
+	zend_declare_class_constant_long(php_websocketframe_class_entry, ZEND_STRS("OP_CONTENUATION")-1, 0x00 TSRMLS_CC);
+	zend_declare_class_constant_long(php_websocketframe_class_entry, ZEND_STRS("OP_TEXT")-1, 0x01 TSRMLS_CC);
+	zend_declare_class_constant_long(php_websocketframe_class_entry, ZEND_STRS("OP_BINARY")-1, 0x02 TSRMLS_CC);
+	zend_declare_class_constant_long(php_websocketframe_class_entry, ZEND_STRS("OP_PING")-1, 0x08 TSRMLS_CC);
+	zend_declare_class_constant_long(php_websocketframe_class_entry, ZEND_STRS("OP_PONG")-1, 0x09 TSRMLS_CC);
 
 }
 

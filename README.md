@@ -31,6 +31,6 @@ WebSocketFrame WebSocketFrame::parseFromString($frame);
 ````
 $frame = new WebSocketFrame();
 $frame->setPayload($message);
-$frame->setType(WebSocketFrame::OP_TEXT);
+$frame->setOpcode(WebSocketFrame::OP_TEXT);
 echo $frame->serializeToString();
 ````
