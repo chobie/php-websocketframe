@@ -222,6 +222,18 @@ PHP_METHOD(websocketframe, getPayload)
 }
 /* }}} */
 
+/* {{{ proto string WebSocketFrame::getOpcode()
+*/
+PHP_METHOD(websocketframe, getOpcode)
+{
+	php_websocketframe *frame = NULL;
+
+	frame = (php_websocketframe*)zend_object_store_get_object(getThis() TSRMLS_CC);
+	RETURN_LONG(frame->opcode);
+}
+/* }}} */
+
+
 /* {{{ proto string WebSocketFrame::serializeToString()
 */
 PHP_METHOD(websocketframe, serializeToString)
@@ -247,8 +259,8 @@ PHP_METHOD(websocketframe, serializeToString)
 	}
 
 	frame_size += frame->payload_length;
-    buffer = emalloc(sizeof(unsigned char) * frame_size + 1);
-    memset(buffer, 0, frame_size + 1);
+	buffer = emalloc(sizeof(unsigned char) * frame_size + 1);
+	memset(buffer, 0, frame_size + 1);
 
 	buffer[0] = 0;
 	if (frame->fin) {
@@ -407,6 +419,7 @@ PHP_METHOD(websocketframe, parseFromString)
 static zend_function_entry php_websocketframe_methods[] = {
 	PHP_ME(websocketframe, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
 	PHP_ME(websocketframe, setOpcode, arginfo_websocketframe_set_opcode, ZEND_ACC_PUBLIC)
+	PHP_ME(websocketframe, getOpcode, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(websocketframe, getPayload, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(websocketframe, setPayload, arginfo_websocketframe_set_payload, ZEND_ACC_PUBLIC)
 	PHP_ME(websocketframe, serializeToString, NULL, ZEND_ACC_PUBLIC)
