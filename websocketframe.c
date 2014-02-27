@@ -42,6 +42,12 @@
   #endif
 #else
   #include <sys/param.h>   // __BYTE_ORDER
+  #ifdef __APPLE__
+    #define __BIG_ENDIAN __DARWIN_BIG_ENDIAN
+    #define __LITTLE_ENDIAN __DARWIN_LITTLE_ENDIAN
+    #define __BYTE_ORDER __DARWIN_BYTE_ORDER
+  #endif
+
   #if defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN && \
       !defined(PHP_WEBSOCKETFRAME_DISABLE_LITTLE_ENDIAN_OPT_FOR_TEST)
     #define WEBSOCKETFRAME_LITTLE_ENDIAN 1
@@ -270,10 +276,10 @@ PHP_METHOD(websocketframe, serializeToString)
 		} u;
 
 #ifdef WEBSOCKETFRAME_LITTLE_ENDIAN
-		length = frame->payload_length;
-#else
 		u.length = frame->payload_length;
 		u.length = (u.length >> 8) | (u.length << 8);
+#else
+		u.length = frame->payload_length;
 #endif
 
 		buffer[1] |= 0x7e;
@@ -288,8 +294,6 @@ PHP_METHOD(websocketframe, serializeToString)
 
 #ifdef WEBSOCKETFRAME_LITTLE_ENDIAN
 		u.length = frame->payload_length;
-#else
-		u.length = frame->payload_length;
 		u.length = (u.length >> 56) |
 				((u.length<<40) & 0x00FF000000000000) |
 				((u.length<<24) & 0x0000FF0000000000) |
@@ -298,6 +302,8 @@ PHP_METHOD(websocketframe, serializeToString)
 				((u.length>>24) & 0x0000000000FF0000) |
 				((u.length>>40) & 0x000000000000FF00) |
 				(u.length << 56);
+#else
+		u.length = frame->payload_length;
 #endif
 
 		buffer[1] |= 0x7f;
@@ -350,10 +356,10 @@ PHP_METHOD(websocketframe, parseFromString)
 
 #ifdef WEBSOCKETFRAME_LITTLE_ENDIAN
 		memcpy(&length, &bytes[offset], 2);
-		frame->payload_length = (uint64_t)length;
+		frame->payload_length = (length >> 8) | (length << 8);
 #else
 		memcpy(&length, &bytes[offset], 2);
-		frame->payload_length = (length >> 8) | (length << 8);
+		frame->payload_length = (uint64_t)length;
 #endif
 
 		offset += 2;
