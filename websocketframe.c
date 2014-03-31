@@ -397,8 +397,10 @@ PHP_METHOD(websocketframe, parseFromString)
 		offset += 8;
 	}
 
-	memcpy(frame->mask_key, &bytes[offset], 4);
-	offset += 4;
+	if (frame->mask) {
+		memcpy(frame->mask_key, &bytes[offset], 4);
+		offset += 4;
+	}
 	frame->payload = ecalloc(1, sizeof(unsigned char) * frame->payload_length);
 	memcpy(frame->payload, &bytes[offset], frame->payload_length);
 
